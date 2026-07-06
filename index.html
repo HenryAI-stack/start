@@ -147,25 +147,6 @@
     margin: 0;
   }
 
-  .bootlog{
-    font-family: var(--mono);
-    font-size: 12.5px;
-    color: var(--text-dim);
-    margin-top: 22px;
-    line-height: 1.9;
-    white-space: pre-wrap;
-  }
-
-  .bootlog .ok{ color: var(--cyan); }
-  .bootlog .line{
-    opacity: 0;
-    animation: reveal 0.4s ease forwards;
-  }
-  .bootlog .line:nth-child(1){ animation-delay: 0.1s; }
-  .bootlog .line:nth-child(2){ animation-delay: 0.35s; }
-  .bootlog .line:nth-child(3){ animation-delay: 0.6s; }
-  .bootlog .line:nth-child(4){ animation-delay: 0.85s; }
-
   @keyframes reveal{
     from{ opacity: 0; transform: translateY(2px); }
     to{ opacity: 1; transform: translateY(0); }
@@ -358,7 +339,7 @@
 
   @media (prefers-reduced-motion: reduce){
     *{ animation: none !important; transition: none !important; }
-    .bootlog .line, .module{ opacity: 1; }
+    .module{ opacity: 1; }
   }
 </style>
 </head>
@@ -375,9 +356,6 @@
       </div>
       <h1>cloudplay<span class="addr">.at</span></h1>
       <p class="sub">Internal tools, self-hosted and running quietly. Pick a module below to open it.</p>
-      <div class="bootlog">
-<div class="line">$ checking modules ...</div><div class="line"><span class="ok">✓</span> people-os     — reachable</div><div class="line"><span class="ok">✓</span> recruit-os    — reachable</div><div class="line"><span class="ok">✓</span> vfr-tool / enginetime — reachable</div>
-      </div>
     </header>
 
     <main class="grid">
