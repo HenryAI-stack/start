@@ -226,7 +226,8 @@
   .logo-box img{
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    padding: 6px;
     display: block;
   }
 
@@ -484,13 +485,13 @@
     document.querySelectorAll('[data-repo]').forEach(async (card) => {
       const repo = card.getAttribute('data-repo');
 
-      // Logo: GitHub's own social-preview image for the repo.
+      // Logo: each site's own favicon.
       const logoBox = card.querySelector('[data-logo]');
       const img = new Image();
-      img.alt = `${repo} logo`;
+      img.alt = `${repo} icon`;
       img.onload = () => { logoBox.innerHTML = ''; logoBox.appendChild(img); };
       img.onerror = () => { /* keep the monogram fallback already in the box */ };
-      img.src = `https://opengraph.githubassets.com/1/${ORG}/${repo}`;
+      img.src = `https://cloudplay.at/${repo}/favicon.ico`;
 
       // Last-updated timestamp.
       const el = card.querySelector('[data-updated]');
