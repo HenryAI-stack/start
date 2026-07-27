@@ -492,17 +492,26 @@
       return article;
     }
 
+    async function fetchRepos(){
+      const headers = { 'Accept': 'application/vnd.github+json' };
+
+      // Try as a GitHub Organization first.
+      let res = await fetch(`https://api.github.com/orgs/${ORG}/repos?per_page=100&type=public`, { headers });
+      if (res.status === 404){
+        // Not an org — fall back to a personal user account.
+        res = await fetch(`https://api.github.com/users/${ORG}/repos?per_page=100&type=public`, { headers });
+      }
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    }
+
     async function loadModules(){
       const grid = document.getElementById('moduleGrid');
       const status = document.getElementById('gridStatus');
       const countEl = document.getElementById('moduleCount');
 
       try {
-        const res = await fetch(`https://api.github.com/orgs/${ORG}/repos?per_page=100&type=public`, {
-          headers: { 'Accept': 'application/vnd.github+json' }
-        });
-        if (!res.ok) throw new Error(res.status);
-        const repos = await res.json();
+        const repos = await fetchRepos();
 
         const visible = repos
           .filter(r => !r.fork && !r.archived)
