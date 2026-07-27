@@ -173,6 +173,53 @@
 
   .grid-status.is-error{ color: var(--amber); }
 
+  .toolbar{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .toolbar-label{
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .sort-select{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line-bright);
+    border-radius: 6px;
+    padding: 7px 30px 7px 12px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%),
+                       linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    transition: border-color 0.2s ease;
+  }
+
+  .sort-select:hover{ border-color: var(--cyan); }
+
+  .sort-select:focus-visible{
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+
+  .sort-select option{
+    background: var(--panel);
+    color: var(--text);
+  }
+
   .module{
     background: var(--panel);
     border: 1px solid var(--line);
@@ -369,6 +416,16 @@
       <p class="sub">Internal tools, self-hosted and running quietly. Pick a module below to open it.</p>
     </header>
 
+    <div class="toolbar">
+      <label class="toolbar-label" for="sortSelect">SORT</label>
+      <select class="sort-select" id="sortSelect">
+        <option value="name-asc">Name (A–Z)</option>
+        <option value="name-desc">Name (Z–A)</option>
+        <option value="updated-desc">Recently updated</option>
+        <option value="updated-asc">Least recently updated</option>
+      </select>
+    </div>
+
     <main class="grid" id="moduleGrid">
       <p class="grid-status" id="gridStatus">Loading modules…</p>
     </main>
@@ -421,8 +478,6 @@
     // repo that hosts this very landing page, config repos, forks you
     // don't want surfaced, archived experiments, etc.
     const EXCLUDED_REPOS = [
-      'start', 'notam-worker', 'flights',
-
       // 'cloudplay-landing',
       // 'HenryAI-stack',
     ];
@@ -507,31 +562,57 @@
       return res.json();
     }
 
+    const SORTERS = {
+      'name-asc':      (a, b) => a.name.localeCompare(b.name),
+      'name-desc':     (a, b) => b.name.localeCompare(a.name),
+      'updated-desc':  (a, b) => new Date(b.pushed_at) - new Date(a.pushed_at),
+      'updated-asc':   (a, b) => new Date(a.pushed_at) - new Date(b.pushed_at),
+    };
+
+    let cachedRepos = [];
+
+    function renderGrid(sortKey){
+      const grid = document.getElementById('moduleGrid');
+      const countEl = document.getElementById('moduleCount');
+      const sorted = [...cachedRepos].sort(SORTERS[sortKey] || SORTERS['name-asc']);
+
+      grid.innerHTML = '';
+
+      if (sorted.length === 0){
+        const empty = document.createElement('p');
+        empty.className = 'grid-status';
+        empty.textContent = 'No modules to show yet.';
+        grid.appendChild(empty);
+      } else {
+        sorted.forEach((repo, i) => grid.appendChild(buildTile(repo, i)));
+      }
+
+      countEl.textContent = `${sorted.length} module${sorted.length === 1 ? '' : 's'}`;
+    }
+
     async function loadModules(){
       const grid = document.getElementById('moduleGrid');
       const status = document.getElementById('gridStatus');
       const countEl = document.getElementById('moduleCount');
+      const sortSelect = document.getElementById('sortSelect');
+
+      const storedSort = localStorage.getItem('cloudplay-sort');
+      const initialSort = SORTERS[storedSort] ? storedSort : 'name-asc';
+      sortSelect.value = initialSort;
+
+      sortSelect.addEventListener('change', () => {
+        localStorage.setItem('cloudplay-sort', sortSelect.value);
+        renderGrid(sortSelect.value);
+      });
 
       try {
         const repos = await fetchRepos();
 
-        const visible = repos
+        cachedRepos = repos
           .filter(r => !r.fork && !r.archived)
-          .filter(r => !EXCLUDED_REPOS.includes(r.name))
-          .sort((a, b) => a.name.localeCompare(b.name));
+          .filter(r => !EXCLUDED_REPOS.includes(r.name));
 
-        grid.innerHTML = '';
-
-        if (visible.length === 0){
-          const empty = document.createElement('p');
-          empty.className = 'grid-status';
-          empty.textContent = 'No modules to show yet.';
-          grid.appendChild(empty);
-        } else {
-          visible.forEach((repo, i) => grid.appendChild(buildTile(repo, i)));
-        }
-
-        countEl.textContent = `${visible.length} module${visible.length === 1 ? '' : 's'}`;
+        renderGrid(initialSort);
       } catch (err) {
         status.textContent = 'Could not load modules from GitHub right now.';
         status.classList.add('is-error');
