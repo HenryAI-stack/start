@@ -163,6 +163,16 @@
     .grid{ grid-template-columns: 1fr; }
   }
 
+  .grid-status{
+    grid-column: 1 / -1;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 24px 0;
+  }
+
+  .grid-status.is-error{ color: var(--amber); }
+
   .module{
     background: var(--panel);
     border: 1px solid var(--line);
@@ -359,77 +369,13 @@
       <p class="sub">Internal tools, self-hosted and running quietly. Pick a module below to open it.</p>
     </header>
 
-    <main class="grid">
-
-      <article class="module" style="--accent:#4CC9F0" data-repo="people-os">
-        <div class="module-top">
-          <div class="module-id">
-            <span class="logo-box" data-logo><span class="fallback">PO</span></span>
-            <span class="code">MODULE / 01</span>
-          </div>
-          <span class="status"><span class="led"></span>ONLINE</span>
-        </div>
-        <h2>people-os</h2>
-        <p>Direct reports, 1:1 notes, follow-ups, and anniversary tracking in one place.</p>
-        <div class="updated" data-updated>last update — checking…</div>
-        <a class="launch" href="https://cloudplay.at/people-os">
-          <span>LAUNCH</span><span class="arrow">→</span>
-        </a>
-      </article>
-
-      <article class="module" style="--accent:#4CC9F0" data-repo="recruit-os">
-        <div class="module-top">
-          <div class="module-id">
-            <span class="logo-box" data-logo><span class="fallback">RO</span></span>
-            <span class="code">MODULE / 02</span>
-          </div>
-          <span class="status"><span class="led"></span>ONLINE</span>
-        </div>
-        <h2>recruit-os</h2>
-        <p>Pipeline tracking and interview notes for hiring.</p>
-        <div class="updated" data-updated>last update — checking…</div>
-        <a class="launch" href="https://cloudplay.at/recruit-os">
-          <span>LAUNCH</span><span class="arrow">→</span>
-        </a>
-      </article>
-
-      <article class="module" style="--accent:#F4A261" data-repo="vfr-tool">
-        <div class="module-top">
-          <div class="module-id">
-            <span class="logo-box" data-logo><span class="fallback">VT</span></span>
-            <span class="code">MODULE / 03</span>
-          </div>
-          <span class="status"><span class="led"></span>ONLINE</span>
-        </div>
-        <h2>vfr-tool</h2>
-        <p>VFR flight planning helper.</p>
-        <div class="updated" data-updated>last update — checking…</div>
-        <a class="launch" href="https://cloudplay.at/vfr-tool">
-          <span>LAUNCH</span><span class="arrow">→</span>
-        </a>
-      </article>
-
-      <article class="module" style="--accent:#F4A261" data-repo="enginetime">
-        <div class="module-top">
-          <div class="module-id">
-            <span class="logo-box" data-logo><span class="fallback">ET</span></span>
-            <span class="code">MODULE / 04</span>
-          </div>
-          <span class="status"><span class="led"></span>ONLINE</span>
-        </div>
-        <h2>enginetime</h2>
-        <p>Engine hours and maintenance interval tracker.</p>
-        <div class="updated" data-updated>last update — checking…</div>
-        <a class="launch" href="https://cloudplay.at/enginetime">
-          <span>LAUNCH</span><span class="arrow">→</span>
-        </a>
-      </article>
-
+    <main class="grid" id="moduleGrid">
+      <p class="grid-status" id="gridStatus">Loading modules…</p>
     </main>
 
     <footer>
       <span>cloudplay.at</span>
-      <span>4 modules · 2 domains of use</span>
+      <span id="moduleCount">— modules</span>
     </footer>
 
   </div>
@@ -470,6 +416,17 @@
 
     const ORG = 'HenryAI-stack';
 
+    // Repos that should NOT get a tile, even though they're public.
+    // Add the repo's exact name (case-sensitive) to skip it — e.g. the
+    // repo that hosts this very landing page, config repos, forks you
+    // don't want surfaced, archived experiments, etc.
+    const EXCLUDED_REPOS = [
+      // 'cloudplay-landing',
+      // 'HenryAI-stack',
+    ];
+
+    const ACCENTS = ['#4CC9F0', '#F4A261'];
+
     function formatTimestamp(iso){
       const d = new Date(iso);
       const datePart = d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
@@ -482,33 +439,98 @@
       return { text: `last update — ${datePart} ${timePart} (${ago})`, daysAgo };
     }
 
-    document.querySelectorAll('[data-repo]').forEach(async (card) => {
-      const repo = card.getAttribute('data-repo');
+    function monogram(name){
+      const parts = name.split(/[-_]/).filter(Boolean);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    }
 
-      // Logo: each site's own favicon.
-      const logoBox = card.querySelector('[data-logo]');
+    function escapeHtml(str){
+      return str.replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function buildTile(repo, index){
+      const name = repo.name;
+      const accent = ACCENTS[index % ACCENTS.length];
+      const desc = repo.description ? escapeHtml(repo.description) : 'No description set on GitHub yet.';
+      const moduleNo = String(index + 1).padStart(2, '0');
+      const { text: updatedText, daysAgo } = formatTimestamp(repo.pushed_at);
+
+      const article = document.createElement('article');
+      article.className = 'module';
+      article.style.setProperty('--accent', accent);
+      article.setAttribute('data-repo', name);
+
+      article.innerHTML = `
+        <div class="module-top">
+          <div class="module-id">
+            <span class="logo-box" data-logo><span class="fallback">${monogram(name)}</span></span>
+            <span class="code">MODULE / ${moduleNo}</span>
+          </div>
+          <span class="status"><span class="led"></span>ONLINE</span>
+        </div>
+        <h2>${escapeHtml(name)}</h2>
+        <p>${desc}</p>
+        <div class="updated${daysAgo > 30 ? ' is-stale' : ''}">${updatedText}</div>
+        <a class="launch" href="https://cloudplay.at/${encodeURIComponent(name)}">
+          <span>LAUNCH</span><span class="arrow">→</span>
+        </a>
+      `;
+
+      // Logo: each site's own favicon, fetched straight from GitHub Pages
+      // (not through the cloudplay.at redirect, which only handles exact
+      // top-level project paths).
+      const logoBox = article.querySelector('[data-logo]');
       const img = new Image();
-      img.alt = `${repo} icon`;
+      img.alt = `${name} icon`;
       img.onload = () => { logoBox.innerHTML = ''; logoBox.appendChild(img); };
       img.onerror = () => { /* keep the monogram fallback already in the box */ };
-      img.src = `https://henryai-stack.github.io/${repo}/favicon.ico`;
+      img.src = `https://henryai-stack.github.io/${name}/favicon.ico`;
 
-      // Last-updated timestamp.
-      const el = card.querySelector('[data-updated]');
+      return article;
+    }
+
+    async function loadModules(){
+      const grid = document.getElementById('moduleGrid');
+      const status = document.getElementById('gridStatus');
+      const countEl = document.getElementById('moduleCount');
+
       try {
-        const res = await fetch(`https://api.github.com/repos/${ORG}/${repo}`, {
+        const res = await fetch(`https://api.github.com/orgs/${ORG}/repos?per_page=100&type=public`, {
           headers: { 'Accept': 'application/vnd.github+json' }
         });
         if (!res.ok) throw new Error(res.status);
-        const data = await res.json();
-        const { text, daysAgo } = formatTimestamp(data.pushed_at);
-        el.textContent = text;
-        if (daysAgo > 30) el.classList.add('is-stale');
+        const repos = await res.json();
+
+        const visible = repos
+          .filter(r => !r.fork && !r.archived)
+          .filter(r => !EXCLUDED_REPOS.includes(r.name))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        grid.innerHTML = '';
+
+        if (visible.length === 0){
+          const empty = document.createElement('p');
+          empty.className = 'grid-status';
+          empty.textContent = 'No modules to show yet.';
+          grid.appendChild(empty);
+        } else {
+          visible.forEach((repo, i) => grid.appendChild(buildTile(repo, i)));
+        }
+
+        countEl.textContent = `${visible.length} module${visible.length === 1 ? '' : 's'}`;
       } catch (err) {
-        el.textContent = 'last update — unavailable';
-        el.classList.add('is-error');
+        status.textContent = 'Could not load modules from GitHub right now.';
+        status.classList.add('is-error');
+        grid.innerHTML = '';
+        grid.appendChild(status);
+        countEl.textContent = '— modules';
       }
-    });
+    }
+
+    loadModules();
   </script>
 </body>
 </html>
