@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code (or any agent) working in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## What this is
 
@@ -26,8 +26,14 @@ The entire site is **one file**: `index.html`. There is no build step, no packag
 - `redirect.pizza`'s free tier doesn't support path wildcards, so `cloudplay.at/<repo>` routing for each tool is configured as an individual exact-match redirect rule per project — a newly added tool's tile will render and link correctly, but the `cloudplay.at/<repo>` redirect itself has to be added manually in redirect.pizza, outside this repo.
 - No `CNAME` file lives in this repo; the custom domain is wired up entirely through external DNS/redirect config, not GitHub Pages' built-in custom-domain mechanism.
 
+## Commands
+
+- **No build, lint, or test tooling exists.** There is no `package.json`, CI, or dependency to install.
+- **Preview:** open `index.html` in a browser, or serve the folder — e.g. `python -m http.server 8000` then visit `http://localhost:8000`. A local server (rather than `file://`) is closer to production and avoids any origin quirks with the GitHub API `fetch`.
+- **Deploy:** push to `main`. GitHub Pages serves the repo root; there is no deploy step in this repo.
+
 ## Working in this repo
 
-- Edit `index.html` directly. To preview, just open it in a browser (or serve the directory with any static file server) — the only external dependency at runtime is the GitHub API and Google Fonts, both fetched over the network.
+- Edit `index.html` directly. The only runtime dependencies are the GitHub REST API and Google Fonts, both fetched over the network.
 - Keep additions consistent with the existing style: CSS custom properties for anything theme-dependent, `var(--mono)` for anything code/label-like, `escapeHtml()` around any GitHub-sourced text before inserting into the DOM.
 - Commit messages in this repo's history are short, imperative, and describe the concrete change (e.g. "Add fetchRepos function to retrieve GitHub repos") — follow that convention.
