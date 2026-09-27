@@ -8,7 +8,8 @@ Running log of non-obvious maintenance work. Newest first.
 never picks it up. Added an `EXTRA_REPOS` array in `index.html`: each entry is
 fetched from `/repos/<owner>/<name>` and merged into the grid. Its LAUNCH goes
 straight to `https://mbielecki-ul.github.io/exam-os/` (no redirect.pizza rule).
-The tile uses the monogram: exam-os still ships Vite's default `favicon.svg`.
+Tile icon: exam-os's own `favicon.svg` (green check mark; it has no
+`favicon.ico`), set via the entry's `icon` field.
 Stagger rules extended to 8 tiles.
 
 ## 2026-09-07 — Favicon rollout + CLAUDE.md
