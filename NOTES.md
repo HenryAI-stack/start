@@ -2,6 +2,15 @@
 
 Running log of non-obvious maintenance work. Newest first.
 
+## 2026-09-27 — exam-os tile (external repo)
+
+`exam-os` lives in `mbielecki-ul`, not `HenryAI-stack`, so the org listing
+never picks it up. Added an `EXTRA_REPOS` array in `index.html`: each entry is
+fetched from `/repos/<owner>/<name>` and merged into the grid. Its LAUNCH goes
+straight to `https://mbielecki-ul.github.io/exam-os/` (no redirect.pizza rule).
+The tile uses the monogram: exam-os still ships Vite's default `favicon.svg`.
+Stagger rules extended to 8 tiles.
+
 ## 2026-09-07 — Favicon rollout + CLAUDE.md
 
 ### Tile icons for every module

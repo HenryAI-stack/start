@@ -239,6 +239,8 @@
   .module:nth-of-type(4){ animation-delay: 0.6s; }
   .module:nth-of-type(5){ animation-delay: 0.75s; }
   .module:nth-of-type(6){ animation-delay: 0.9s; }
+  .module:nth-of-type(7){ animation-delay: 1.05s; }
+  .module:nth-of-type(8){ animation-delay: 1.2s; }
 
   .module::before{
     content: "";
@@ -486,6 +488,21 @@
       // 'HenryAI-stack',
     ];
 
+    // Tools that live OUTSIDE the HenryAI-stack org but should still get a
+    // tile. Each entry is fetched individually from the GitHub API (for its
+    // description + last-push time) and merged into the grid.
+    //   owner/name — the GitHub repo
+    //   url        — where LAUNCH goes (no cloudplay.at redirect exists for these)
+    //   icon       — optional tile icon URL; omit to use the monogram
+    const EXTRA_REPOS = [
+      {
+        owner: 'mbielecki-ul',
+        name: 'exam-os',
+        url: 'https://mbielecki-ul.github.io/exam-os/',
+        description: 'Employee knowledge exams — magic-link login, timed multiple-choice exams, admin results dashboard.',
+      },
+    ];
+
     const ACCENTS = ['#4CC9F0', '#F4A261'];
 
     function formatTimestamp(iso){
@@ -517,7 +534,10 @@
       const accent = ACCENTS[index % ACCENTS.length];
       const desc = repo.description ? escapeHtml(repo.description) : 'No description set on GitHub yet.';
       const moduleNo = String(index + 1).padStart(2, '0');
-      const { text: updatedText, daysAgo } = formatTimestamp(repo.pushed_at);
+      const launchUrl = repo._launchUrl || `https://cloudplay.at/${encodeURIComponent(name)}`;
+      let updatedText = 'last update — unavailable';
+      let daysAgo = 0;
+      if (repo.pushed_at) ({ text: updatedText, daysAgo } = formatTimestamp(repo.pushed_at));
 
       const article = document.createElement('article');
       article.className = 'module';
@@ -535,7 +555,7 @@
         <h2>${escapeHtml(name)}</h2>
         <p>${desc}</p>
         <div class="updated${daysAgo > 30 ? ' is-stale' : ''}">${updatedText}</div>
-        <a class="launch" href="https://cloudplay.at/${encodeURIComponent(name)}">
+        <a class="launch" href="${escapeHtml(launchUrl)}">
           <span>LAUNCH</span><span class="arrow">→</span>
         </a>
       `;
@@ -544,11 +564,13 @@
       // (not through the cloudplay.at redirect, which only handles exact
       // top-level project paths).
       const logoBox = article.querySelector('[data-logo]');
+      const iconUrl = repo._external ? repo._iconUrl : `https://henryai-stack.github.io/${name}/favicon.ico`;
+      if (!iconUrl) return article; // external tool without an icon: keep the monogram
       const img = new Image();
       img.alt = `${name} icon`;
       img.onload = () => { logoBox.innerHTML = ''; logoBox.appendChild(img); };
       img.onerror = () => { /* keep the monogram fallback already in the box */ };
-      img.src = `https://henryai-stack.github.io/${name}/favicon.ico`;
+      img.src = iconUrl;
 
       return article;
     }
@@ -564,6 +586,28 @@
       }
       if (!res.ok) throw new Error(res.status);
       return res.json();
+    }
+
+    // Fetch each EXTRA_REPOS entry on its own. A failed lookup still yields a
+    // tile (with the fallback description and no timestamp) so an API hiccup
+    // never hides the tool.
+    function fetchExtraRepos(){
+      const headers = { 'Accept': 'application/vnd.github+json' };
+      return Promise.all(EXTRA_REPOS.map(async (extra) => {
+        let data = {};
+        try {
+          const res = await fetch(`https://api.github.com/repos/${extra.owner}/${extra.name}`, { headers });
+          if (res.ok) data = await res.json();
+        } catch (e) { /* use fallback below */ }
+        return {
+          name: extra.name,
+          description: data.description || extra.description || null,
+          pushed_at: data.pushed_at || null,
+          _external: true,
+          _launchUrl: extra.url,
+          _iconUrl: extra.icon || null,
+        };
+      }));
     }
 
     const SORTERS = {
@@ -610,11 +654,12 @@
       });
 
       try {
-        const repos = await fetchRepos();
+        const [repos, extras] = await Promise.all([fetchRepos(), fetchExtraRepos()]);
 
         cachedRepos = repos
           .filter(r => !r.fork && !r.archived)
-          .filter(r => !EXCLUDED_REPOS.includes(r.name));
+          .filter(r => !EXCLUDED_REPOS.includes(r.name))
+          .concat(extras);
 
         renderGrid(initialSort);
       } catch (err) {
