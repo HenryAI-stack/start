@@ -7,9 +7,9 @@ Running log of non-obvious maintenance work. Newest first.
 `flights` (SkySearch) had been in `EXCLUDED_REPOS` since 2026-07-27, before the
 tool existed in its current form. Removed it from the list. Its tile icon comes
 from a `favicon.ico` that the flights deploy workflow now copies into `_site/`
-(that repo only publishes `_site/`, not the repo root). LAUNCH needs a
-redirect.pizza exact-match rule `cloudplay.at/flights` →
-`https://henryai-stack.github.io/flights/` (its API only allows that origin).
+(that repo only publishes `_site/`, not the repo root). LAUNCH via
+`cloudplay.at/flights` needs no manual redirect.pizza rule — new tools are
+picked up automatically.
 Reveal stagger no longer uses fixed `nth-of-type` rules: `buildTile()` sets
 `--i` (tile index, capped at 11) and one `.module` rule derives the delay, so
 new repos need no CSS change.
