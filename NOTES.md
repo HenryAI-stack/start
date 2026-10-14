@@ -2,6 +2,16 @@
 
 Running log of non-obvious maintenance work. Newest first.
 
+## 2026-10-14 — flights tile
+
+`flights` (SkySearch) had been in `EXCLUDED_REPOS` since 2026-07-27, before the
+tool existed in its current form. Removed it from the list. Its tile icon comes
+from a `favicon.ico` that the flights deploy workflow now copies into `_site/`
+(that repo only publishes `_site/`, not the repo root). LAUNCH needs a
+redirect.pizza exact-match rule `cloudplay.at/flights` →
+`https://henryai-stack.github.io/flights/` (its API only allows that origin).
+The grid now has 8 tiles = all 8 `nth-of-type` stagger rules in use.
+
 ## 2026-09-27 — exam-os tile (external repo)
 
 `exam-os` lives in `mbielecki-ul`, not `HenryAI-stack`, so the org listing
