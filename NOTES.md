@@ -10,7 +10,9 @@ from a `favicon.ico` that the flights deploy workflow now copies into `_site/`
 (that repo only publishes `_site/`, not the repo root). LAUNCH needs a
 redirect.pizza exact-match rule `cloudplay.at/flights` →
 `https://henryai-stack.github.io/flights/` (its API only allows that origin).
-The grid now has 8 tiles = all 8 `nth-of-type` stagger rules in use.
+Reveal stagger no longer uses fixed `nth-of-type` rules: `buildTile()` sets
+`--i` (tile index, capped at 11) and one `.module` rule derives the delay, so
+new repos need no CSS change.
 
 ## 2026-09-27 — exam-os tile (external repo)
 
